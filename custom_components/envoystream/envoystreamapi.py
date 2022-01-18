@@ -100,11 +100,17 @@ class EnvoyStreamApi:
                 url = "http://%s/stream/meter" % self.host
                 _LOGGER.debug("Opening %s", url)
 
+                counter: int = 0
                 async with self.session.stream(
                     "GET", url, auth=self.digestauth
                 ) as resp:
                     async for line in resp.aiter_lines():
-                        await self.handle_json_message(line, data_callback)
+                        if counter == 0:
+                            await self.handle_json_message(line, data_callback)
+                            counter = 6
+
+                        counter = counter - 1
+
             except anyio.ClosedResourceError:
                 break
             except Exception as exc:
