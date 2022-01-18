@@ -4,7 +4,7 @@
   "image": "ghcr.io/ludeeus/devcontainer/integration:stable",
   "postCreateCommand": "container install",
   "context": "..",
-  "workspaceFolder": "/workspace",
+  "workspaceFolder": "/workspaces",
   "appPort": ["9123:8123"],
   "extensions": [
     "ms-python.python",

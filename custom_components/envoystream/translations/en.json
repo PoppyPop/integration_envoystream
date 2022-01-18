@@ -3,20 +3,11 @@
     "step": {
       "user": {
         "title": "TeleInformation",
-        "description": "If you need help with the configuration have a look here: https://github.com/poppypop/integration_teleinformation"
-      },
-      "detect": {
-        "title": "TeleInformation",
-        "description": "If you need help with the configuration have a look here: https://github.com/poppypop/integration_teleinformation",
+        "description": "If you need help with the configuration have a look here: https://github.com/poppypop/integration_envoystream",
         "data": {
-          "device": "USB port"
-        }
-      },
-      "manual": {
-        "title": "TeleInformation",
-        "description": "If you need help with the configuration have a look here: https://github.com/poppypop/integration_teleinformation",
-        "data": {
-          "device": "USB port"
+          "envoystream.host": "Nom d'hôte",
+          "envoystream.user": "Nom d'utilisateur",
+          "envoystream.pass": "Mot de passe"
         }
       }
     },
@@ -25,23 +16,6 @@
     },
     "abort": {
       "single_instance_allowed": "Only a single instance is allowed."
-    }
-  },
-  "options": {
-    "step": {
-      "user": {
-        "data": {
-          "sensor": "Sensor enabled"
-        }
-      },
-      "init": {
-        "title": "TeleInformation",
-        "description": "If you need help with the configuration have a look here: https://github.com/poppypop/integration_teleinformation",
-        "data": {
-          "monitoredvars": "Monitored values",
-          "readtimeout": "Read Timeout"
-        }
-      }
     }
   }
 }

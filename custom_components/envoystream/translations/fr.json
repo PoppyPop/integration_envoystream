@@ -2,21 +2,12 @@
   "config": {
     "step": {
       "user": {
-        "title": "TeleInformation",
-        "description": "Si vous avez besoin d'aide pour la configuration, regardez ici: https://github.com/poppypop/integration_teleinformation"
-      },
-      "detect": {
-        "title": "TeleInformation",
-        "description": "Si vous avez besoin d'aide pour la configuration, regardez ici: https://github.com/poppypop/integration_teleinformation",
+        "title": "Envoy Strean",
+        "description": "Si vous avez besoin d'aide pour la configuration, regardez ici: https://github.com/poppypop/integration_envoystream",
         "data": {
-          "device": "Port USB"
-        }
-      },
-      "manual": {
-        "title": "TeleInformation",
-        "description": "Si vous avez besoin d'aide pour la configuration, regardez ici: https://github.com/poppypop/integration_teleinformation",
-        "data": {
-          "device": "Port USB"
+          "envoystream.host": "Nom d'hôte",
+          "envoystream.user": "Nom d'utilisateur",
+          "envoystream.pass": "Mot de passe"
         }
       }
     },
@@ -25,23 +16,6 @@
     },
     "abort": {
       "single_instance_allowed": "Une seule instance est autorisée."
-    }
-  },
-  "options": {
-    "step": {
-      "user": {
-        "data": {
-          "sensor": "Capteur activé"
-        }
-      },
-      "init": {
-        "title": "TeleInformation",
-        "description": "Si vous avez besoin d'aide pour la configuration, regardez ici: https://github.com/poppypop/integration_teleinformation",
-        "data": {
-          "monitoredvars": "Valeur à suivre",
-          "readtimeout": "Timeout en lecture"
-        }
-      }
     }
   }
 }

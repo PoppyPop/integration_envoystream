@@ -19,7 +19,9 @@ PLATFORMS = [SENSOR]
 
 
 # Configuration and options
-CONF_DEVICE = "device"
+CONF_HOST = "envoystream.host"
+CONF_PASSWORD = "envoystream.pass"
+CONF_USERNAME = "envoystream.user"
 
 SIGNAL_RECEIVE_MESSAGE = "envoystream.receive_message"
 DATA_SERIAL_NUMBER = "envoystream.sn"
@@ -44,6 +46,12 @@ SENSOR_TYPES = {
         DEVICE_CLASS_POWER,
         STATE_CLASS_MEASUREMENT,
     ],
+    "production-ph-t-p": [
+        "Production",
+        POWER_WATT,
+        DEVICE_CLASS_POWER,
+        STATE_CLASS_MEASUREMENT,
+    ],
     "total-consumption-ph-a-p": [
         "Total Consumption Phase A",
         POWER_WATT,
@@ -62,6 +70,12 @@ SENSOR_TYPES = {
         DEVICE_CLASS_POWER,
         STATE_CLASS_MEASUREMENT,
     ],
+    "total-consumption-ph-t-p": [
+        "Total Consumption",
+        POWER_WATT,
+        DEVICE_CLASS_POWER,
+        STATE_CLASS_MEASUREMENT,
+    ],
     "net-consumption-ph-a-p": [
         "Net Consumption Phase A",
         POWER_WATT,
@@ -76,6 +90,12 @@ SENSOR_TYPES = {
     ],
     "net-consumption-ph-c-p": [
         "Net Consumption Phase C",
+        POWER_WATT,
+        DEVICE_CLASS_POWER,
+        STATE_CLASS_MEASUREMENT,
+    ],
+    "net-consumption-ph-t-p": [
+        "Net Consumption",
         POWER_WATT,
         DEVICE_CLASS_POWER,
         STATE_CLASS_MEASUREMENT,

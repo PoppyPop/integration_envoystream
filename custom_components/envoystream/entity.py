@@ -8,6 +8,12 @@ from .const import VERSION
 
 
 class EnvoyStreamEntity(Entity):
+    """Representation of an base envoystream api.
+
+    The api is responsible for receiving the envoystream frames,
+    creating devices if needed, and dispatching messages to platforms.
+    """
+
     def __init__(self, envoy_id):
         """Initialize the device."""
         self.envoy_id = envoy_id

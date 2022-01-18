@@ -1,8 +1,8 @@
 """
-Custom integration to integrate teleinformation with Home Assistant.
+Custom integration to integrate envoystream with Home Assistant.
 
 For more details about this integration, please refer to
-https://github.com/poppypop/integration_teleinformation
+https://github.com/poppypop/integration_envoystream
 """
 import asyncio
 from datetime import timedelta
@@ -11,9 +11,11 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Config
 from homeassistant.core import HomeAssistant
 
-from .const import DATA_DETECTED_VALUE
-from .const import DATA_DONGLE
+from .const import CONF_HOST
+from .const import CONF_PASSWORD
+from .const import CONF_USERNAME
 from .const import DATA_SERIAL_NUMBER
+from .const import DATA_STREAMAPI
 from .const import DOMAIN
 from .const import PLATFORMS
 from .envoystreamapi import EnvoyStreamApi
@@ -23,7 +25,6 @@ SCAN_INTERVAL = timedelta(minutes=900)
 
 async def async_setup(hass: HomeAssistant, config: Config):
     """Set up this integration using YAML is not supported."""
-
     return True
 
 
@@ -32,23 +33,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     if hass.data.get(DOMAIN) is None:
         hass.data.setdefault(DOMAIN, {})
 
-    # First gather teleinfo frame for config
+    # First gather envoystream frame for config
     hass.data[DOMAIN][entry.entry_id] = {}
 
-    api = EnvoyStreamApi(hass, entry)
+    api = EnvoyStreamApi(
+        hass,
+        entry.data[CONF_HOST],
+        entry.data[CONF_USERNAME],
+        entry.data[CONF_PASSWORD],
+    )
 
-    hass.data[DOMAIN][entry.entry_id][DATA_DONGLE] = api
+    hass.data[DOMAIN][entry.entry_id][DATA_STREAMAPI] = api
+    hass.data[DOMAIN][entry.entry_id][DATA_SERIAL_NUMBER] = await api.get_sn()
 
-    # serialnumber = await usb_dongle.async_config_entry_first_refresh()
-    usb_dongle.initialize_reading()
-
-    while usb_dongle.dataAvailable is not True:
-        await asyncio.sleep(1)
-
-    hass.data[DOMAIN][entry.entry_id][
-        DATA_DETECTED_VALUE
-    ] = usb_dongle.detectedValue.keys()
-    hass.data[DOMAIN][entry.entry_id][DATA_SERIAL_NUMBER] = usb_dongle.device_id
+    # Start reading
+    await api.start_reading()
 
     for platform in PLATFORMS:
         hass.async_create_task(
@@ -59,10 +58,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
     def handle_restart(call):
         """Handle the service call."""
-        restart_usb_dongle = hass.data[DOMAIN][entry.entry_id][DATA_DONGLE]
+        restart_api_stream: EnvoyStreamApi = hass.data[DOMAIN][entry.entry_id][
+            DATA_STREAMAPI
+        ]
 
-        restart_usb_dongle.stop_serial_read()
-        restart_usb_dongle.initialize_reading()
+        restart_api_stream.stop_envoy_stream_reader()
+        restart_api_stream.start_reading()
 
     hass.services.async_register(DOMAIN, "restart", handle_restart)
 
@@ -72,8 +73,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Handle removal of an entry."""
 
-    usb_dongle = hass.data[DOMAIN][entry.entry_id][DATA_DONGLE]
-    usb_dongle.unload()
+    api: EnvoyStreamApi = hass.data[DOMAIN][entry.entry_id][DATA_STREAMAPI]
+    await api.unload()
 
     unloaded = all(
         await asyncio.gather(

@@ -3,60 +3,33 @@ from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from .const import CONF_MONITORED_VARIABLES
-from .const import DATA_DETECTED_VALUE
 from .const import DATA_SERIAL_NUMBER
 from .const import DOMAIN
-from .const import LOGGER
 from .const import SENSOR_TYPES
-from .const import SENSOR_TYPES_ALL
-from .entity import TeleinformationEntity
+from .entity import EnvoyStreamEntity
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_devices):
     """Setup sensor platform."""
 
-    serialNumber: str = hass.data[DOMAIN][entry.entry_id][DATA_SERIAL_NUMBER]
+    serial_number: str = hass.data[DOMAIN][entry.entry_id][DATA_SERIAL_NUMBER]
 
-    defaultValue: list[str] = [
-        detectedSensor
-        for detectedSensor in hass.data[DOMAIN][entry.entry_id][DATA_DETECTED_VALUE]
-        if (detectedSensor in SENSOR_TYPES_ALL)
-    ]
-
-    devices = entry.options.get(CONF_MONITORED_VARIABLES, defaultValue)
-
-    platform = "sensor"
-
-    # Clean removed entity
-    entity_registry = await hass.helpers.entity_registry.async_get_registry()
-
-    toremove = [removed for removed in SENSOR_TYPES_ALL if (removed not in devices)]
-    LOGGER.debug(toremove)
-
-    for removedSensor in toremove:
-        sensor_uid = _get_unique_id(serialNumber, removedSensor)
-        entity_id = entity_registry.async_get_entity_id(platform, DOMAIN, sensor_uid)
-        if entity_id:
-            LOGGER.debug("Removing entity: %s %s", platform, sensor_uid)
-            entity_registry.async_remove(entity_id)
-
-    for device in devices:
-        async_add_devices([TeleinformationSensor(serialNumber, device)])
+    for device in SENSOR_TYPES:
+        async_add_devices([EnvoyStreamSensor(serial_number, device)])
 
 
-def _get_unique_id(meter_id: str, dev_name: str):
-    return f"{meter_id}_{dev_name}"
+def _get_unique_id(envoy_id: str, name: str):
+    return f"{envoy_id}_{name}"
 
 
-class TeleinformationSensor(TeleinformationEntity, SensorEntity):
-    """teleinformation Sensor class."""
+class EnvoyStreamSensor(EnvoyStreamEntity, SensorEntity):
+    """envoystream Sensor class."""
 
-    def __init__(self, meter_id, dev_name):
+    def __init__(self, envoy_id: str, dev_name: str):
         """Initialize the EnOcean sensor device."""
-        super().__init__(meter_id)
-        self.dev_name = dev_name
+        super().__init__(envoy_id)
         self._state = None
+        self.dev_name = dev_name
 
     @property
     def name(self):
@@ -66,7 +39,7 @@ class TeleinformationSensor(TeleinformationEntity, SensorEntity):
     @property
     def unique_id(self) -> str:
         """Return the unique ID for this entity."""
-        return _get_unique_id(self.meter_id, self.dev_name)
+        return _get_unique_id(self.envoy_id, self.dev_name)
 
     @property
     def native_value(self):
