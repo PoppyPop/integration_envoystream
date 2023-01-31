@@ -1,7 +1,5 @@
 {
   "name": "Envoy Stream",
   "hacs": "1.6.0",
-  "domains": ["sensor"],
-  "iot_class": "Local Push",
   "homeassistant": "2021.9.0"
 }
