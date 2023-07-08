@@ -6,12 +6,6 @@
       "type": "shell",
       "command": "scripts/develop",
       "problemMatcher": []
-    },
-    {
-      "label": "Launch fake ecowitt client",
-      "type": "shell",
-      "command": "python tests/fake_client.py",
-      "problemMatcher": []
     }
   ]
 }
