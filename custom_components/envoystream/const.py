@@ -19,9 +19,7 @@ PLATFORMS = [SENSOR]
 
 
 # Configuration and options
-CONF_HOST = "envoystream.host"
-CONF_PASSWORD = "envoystream.pass"
-CONF_USERNAME = "envoystream.user"
+CONF_USE_ENLIGHTEN = "envoystream.useen"
 
 SIGNAL_RECEIVE_MESSAGE = "envoystream.receive_message"
 DATA_SERIAL_NUMBER = "envoystream.sn"
