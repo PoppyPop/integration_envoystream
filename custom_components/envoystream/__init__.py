@@ -1,5 +1,4 @@
-"""
-Custom integration to integrate envoystream with Home Assistant.
+"""Custom integration to integrate envoystream with Home Assistant.
 
 For more details about this integration, please refer to
 https://github.com/poppypop/integration_envoystream

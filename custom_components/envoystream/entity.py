@@ -1,4 +1,4 @@
-"""EnvoyStreamEntity class"""
+"""EnvoyStreamEntity class."""
 from homeassistant.helpers.entity import Entity
 
 from .const import DOMAIN

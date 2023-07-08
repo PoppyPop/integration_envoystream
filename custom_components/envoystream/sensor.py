@@ -10,7 +10,7 @@ from .entity import EnvoyStreamEntity
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_devices):
-    """Setup sensor platform."""
+    """Sensor platform setup."""
 
     serial_number: str = hass.data[DOMAIN][entry.entry_id][DATA_SERIAL_NUMBER]
 

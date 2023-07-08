@@ -2,8 +2,7 @@
 import asyncio
 import json
 import logging
-from typing import Callable
-from typing import Dict
+from collections.abc import Callable
 
 import anyio
 import httpx
@@ -26,7 +25,7 @@ class EnvoyStreamApi:
 
     hass: HomeAssistant
     device_id: str = None
-    detectedValue: Dict[str, str] = {}
+    detectedValue: dict[str, str] = {}
     dataAvailable: bool = None
 
     def __init__(self, hass: HomeAssistant, host: str, user: str, passw: str):
@@ -43,7 +42,7 @@ class EnvoyStreamApi:
         self.stop_envoy_stream_reader()
 
     async def get_sn(self):
-        """Register read task to home assistant"""
+        """Register read task to home assistant."""
         url = "http://%s/inventory.json" % self.host
         _LOGGER.debug("Opening %s", url)
 
@@ -58,7 +57,7 @@ class EnvoyStreamApi:
                 return serial_num
 
     async def start_reading(self):
-        """Register read task to home assistant"""
+        """Register read task to home assistant."""
         if self._serial_loop_task:
             _LOGGER.warn("task already initialized")
             return
