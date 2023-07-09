@@ -104,6 +104,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return await self.async_step_user()
 
+    # pylint: disable=unused-argument
     async def async_step_reauth(self, user_input):
         """Handle configuration by re-auth."""
         self._reauth_entry = self.hass.config_entries.async_get_entry(

@@ -12,6 +12,7 @@ from .coordinator import EnvoyDataUpdateCoordinator
 PLATFORMS = ["sensor"]
 
 
+# pylint: disable=unused-argument
 async def async_setup(hass: HomeAssistant, config: ConfigEntry):
     """Set up this integration using YAML is not supported."""
     return True
