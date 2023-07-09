@@ -1,11 +1,10 @@
 """Config flow for Enphase Envoy integration."""
 from __future__ import annotations
 
-import contextlib
 import logging
 from typing import Any
 
-import httpx
+import aiohttp
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.components import zeroconf
@@ -18,6 +17,7 @@ from homeassistant.core import callback
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers.aiohttp_client import async_create_clientsession
 
 from .const import CONF_USE_ENLIGHTEN
 from .const import DATA_SERIAL_NUMBER
@@ -33,19 +33,17 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> EnvoyRead
     """Validate the user input allows us to connect."""
     envoy_reader = EnvoyReader(
         data[CONF_HOST],
-        username=data[CONF_USERNAME],
-        password=data[CONF_PASSWORD],
         enlighten_user=data[CONF_USERNAME],
         enlighten_pass=data[CONF_PASSWORD],
-        use_enlighten_owner_token=data.get(CONF_USE_ENLIGHTEN, False),
         enlighten_serial_num=data[DATA_SERIAL_NUMBER],
     )
 
     try:
-        await envoy_reader.getData()
-    except httpx.HTTPStatusError as err:
-        raise InvalidAuth from err
-    except (RuntimeError, httpx.HTTPError) as err:
+        await envoy_reader.get_meters(hass.http_session)
+    except aiohttp.ClientResponseError as err:
+        if err.status == 401:
+            raise InvalidAuth from err
+
         raise CannotConnect from err
 
     return envoy_reader
@@ -141,11 +139,14 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return f"{ENVOY} {self.unique_id}"
         return ENVOY
 
-    async def _async_set_unique_id_from_envoy(self, envoy_reader: EnvoyReader) -> bool:
+    async def _async_set_unique_id_from_envoy(
+        self, hass: HomeAssistant, envoy_reader: EnvoyReader
+    ) -> bool:
         """Set the unique id by fetching it from the envoy."""
         serial = None
-        with contextlib.suppress(httpx.HTTPError):
-            serial = await envoy_reader.get_full_serial_number()
+
+        session = async_create_clientsession(hass)
+        serial = await envoy_reader.get_full_serial_number(session)
         if serial:
             await self.async_set_unique_id(serial)
             return True
@@ -187,7 +188,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     return self.async_abort(reason="reauth_successful")
 
                 if not self.unique_id and await self._async_set_unique_id_from_envoy(
-                    envoy_reader
+                    self.hass, envoy_reader
                 ):
                     data[CONF_NAME] = self._async_envoy_name()
 

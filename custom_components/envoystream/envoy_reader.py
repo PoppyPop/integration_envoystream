@@ -2,6 +2,7 @@
 import datetime
 import logging
 import typing
+import xml.etree.ElementTree as et
 
 import aiohttp
 import jwt
@@ -10,16 +11,19 @@ from homeassistant.util.network import is_ipv6_address
 LOGIN_URL = "https://enlighten.enphaseenergy.com/login/login.json?"
 TOKEN_URL = "https://entrez.enphaseenergy.com/tokens"
 
-METERS_URL = "/ivp/meters"
+INFO_URL = "https://{}/info.json"
+
+METERS_URL = "https://{}/ivp/meters"
 READINGS_URL = f"{METERS_URL}/readings"
+
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class EnvoyReader:  # pylint: disable=too-many-instance-attributes
+class EnvoyReader:
     """Instance of EnvoyReader."""
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         host,
         enlighten_user=None,
@@ -36,16 +40,22 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
         self.enlighten_pass = enlighten_pass
         self.enlighten_serial_num = enlighten_serial_num
         self.enlighten_token = enlighten_token
-        self._phase_number = None
+        self._meters: dict[str, str] = None
+        self._phase_count: int = 0
 
         if self.enlighten_token is not None:
             self._get_expiry_date(self.enlighten_token)
 
     async def _async_get(
-        self, url: str, http_session: aiohttp.ClientSession, is_retry=False
+        self,
+        url: str,
+        http_session: aiohttp.ClientSession,
+        is_json: bool = True,
+        is_retry: bool = False,
     ) -> typing.Any:
         _LOGGER.debug("HTTP GET Attempt: %s", url)
 
+        url = url.format(self.host)
         headers = {"Authorization": f"Bearer {self.enlighten_token}"}
         async with http_session.get(url, headers=headers) as resp:
             if is_retry:
@@ -54,14 +64,17 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
             if resp.status == 401:
                 self.enlighten_token = None
                 await self._login(http_session)
-                return await self._async_get(url, http_session)
+                return await self._async_get(url, http_session, is_retry=True)
 
-            return await resp.json()
+            if is_json:
+                return await resp.json()
+            else:
+                return await resp.text()
 
     async def _get_enphase_sessionid(
         self, http_session: aiohttp.ClientSession, user: str, password: str
     ) -> str:
-        """get session_id from login."""
+        """Get session_id from login."""
         data = {"user[email]": user, "user[password]": password}
         _LOGGER.debug("Getting session_id: %s", LOGIN_URL)
         async with http_session.post(LOGIN_URL, data=data) as resp:
@@ -106,52 +119,50 @@ class EnvoyReader:  # pylint: disable=too-many-instance-attributes
                 self.enlighten_pass,
             )
 
-    async def get_phase_number(self, http_session: aiohttp.ClientSession) -> int:
-        if self._phase_number is None:
-            self._login(http_session)
-            _ = await self._async_get(METERS_URL, http_session)
+    async def get_meters(self, http_session: aiohttp.ClientSession) -> int:
+        """get."""
+        if self._meters is None:
+            await self._login(http_session)
+            meters = await self._async_get(METERS_URL, http_session)
 
-    async def getData(self, getInverters=True):  # pylint: disable=invalid-name
-        """Fetch data from the endpoint and if inverters selected default."""
-        """to fetching inverter data."""
+            self._meters = {}
+            for meter in meters:
+                self._meters[meter.eid] = meter.measurementType
+                self._phase_count = meter.phaseCount
 
-        return
-        # Check if the Secure flag is set
-        # if self.https_flag == "s":
-        #     _LOGGER.debug("Checking Token value: %s", self.token)
-        #     # Check if a token has already been retrieved
-        #     if self.token == "":
-        #         _LOGGER.debug("Found empty token: %s", self.token)
-        #         await self._getEnphaseToken()
-        #     else:
-        #         _LOGGER.debug("Token is populated: %s", self.token)
-        #         if self._is_enphase_token_expired(self.token):
-        #             _LOGGER.debug("Found Expired token - Retrieving new token")
-        #             await self._getEnphaseToken()
+        return self._meters
 
-        # if not self.endpoint_type:
-        #     await self.detect_model()
-        # else:
-        #     await self._update()
+    async def get_datas(self, http_session: aiohttp.ClientSession):
+        """Fetch data from the endpoint."""
 
-        # if not self.get_inverters or not getInverters:
-        #     return
+        await self._login(http_session)
+        readings = await self._async_get(READINGS_URL, http_session)
 
-        # inverters_url = ENDPOINT_URL_PRODUCTION_INVERTERS.format(
-        #     self.https_flag, self.host
-        # )
-        # inverters_auth = httpx.DigestAuth(self.username, self.password)
+        result: dict[str, float] = {}
 
-        # response = await self._async_fetch_with_retry(
-        #     inverters_url, auth=inverters_auth
-        # )
-        # _LOGGER.debug(
-        #     "Fetched from %s: %s: %s",
-        #     inverters_url,
-        #     response,
-        #     response.text,
-        # )
-        # if response.status_code == 401:
-        #     response.raise_for_status()
-        # self.endpoint_production_inverters = response
-        # return
+        for reading in readings:
+            reading_type = self._meters[reading.eid]
+
+            result[f"{reading_type}"] = reading.instantaneousDemand
+
+            phase_number: int = 1
+            for phase in reading.channels:
+                phase_number += 1
+                result[f"{reading_type}-{phase_number}"] = phase.instantaneousDemand
+
+        # Add full consumption
+        result["consumption"] = result["net-consumption"] - result["production"]
+        for i in range(1, self._phase_count):
+            result[f"consumption-{i}"] = (
+                result[f"net-consumption-{i}"] - result[f"production-{i}"]
+            )
+
+        return result
+
+    async def get_full_serial_number(self, http_session: aiohttp.ClientSession) -> str:
+        """Get serial number."""
+
+        infos = await self._async_get(INFO_URL, http_session, is_json=False)
+        infos_obj = et.fromstring(infos)
+
+        return infos_obj.find("device").find("sn").text
