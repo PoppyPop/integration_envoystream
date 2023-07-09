@@ -41,6 +41,10 @@ def _get_unique_id(envoy_id: str, name: str):
     return f"{envoy_id}_{name}"
 
 
+def _get_name(envoy_id: str):
+    return f"{NAME} {envoy_id}"
+
+
 class EnvoyStreamSensor(CoordinatorEntity, SensorEntity):
     """envoystream Sensor class."""
 
@@ -60,7 +64,11 @@ class EnvoyStreamSensor(CoordinatorEntity, SensorEntity):
     @property
     def name(self) -> str:
         """Return the name of the entity."""
-        return self.value_name.replace("_", " ").replace("-", " ").title()
+        return (
+            _get_name(self.serial_number)
+            + " "
+            + self.value_name.replace("_", " ").replace("-", " ").title()
+        )
 
     @property
     def unique_id(self) -> str:
@@ -72,7 +80,7 @@ class EnvoyStreamSensor(CoordinatorEntity, SensorEntity):
         """Return device information about this entity."""
         return {
             "identifiers": {(DOMAIN, self.serial_number)},
-            "name": NAME,
+            "name": _get_name(self.serial_number),
             "model": self.serial_number,
             "sw_version": VERSION,
             "manufacturer": "Enphase",

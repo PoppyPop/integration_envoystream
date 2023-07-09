@@ -42,7 +42,7 @@ class EnvoyDataUpdateCoordinator(DataUpdateCoordinator):
             hass,
             LOGGER,
             name=DOMAIN,
-            update_interval=timedelta(minutes=scan_interval),
+            update_interval=timedelta(seconds=scan_interval),
         )
 
     async def _async_update_data(self) -> dict:

@@ -2,7 +2,7 @@
 # Base component constants
 import logging
 
-NAME = "Envoy stream"
+NAME = "Envoy"
 DOMAIN = "envoystream"
 VERSION = "0.1.0"
 
