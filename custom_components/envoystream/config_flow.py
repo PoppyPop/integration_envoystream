@@ -19,6 +19,8 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
 
 from .const import CONF_SERIAL_NUMBER
+from .const import CONF_UPDATE_INTERVAL
+from .const import DEFAULT_UPDATE_INTERVAL
 from .const import DOMAIN
 from .const import LOGGER
 from .envoy_reader import EnvoyReader
@@ -210,6 +212,41 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             raise CannotConnect from err
 
         return envoy_reader
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry):
+        """Get the options flow for this handler."""
+        return OptionsFlowHandler(config_entry)
+
+
+class OptionsFlowHandler(config_entries.OptionsFlow):
+    """Handle a option flow for iregul."""
+
+    def __init__(self, config_entry: config_entries.ConfigEntry):
+        """Initialize options flow."""
+        self.config_entry = config_entry
+
+    async def async_step_init(self, user_input=None):
+        """Handle options flow."""
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
+
+        scan_interval = self.config_entry.options.get(
+            CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL
+        )
+
+        optSchem = vol.Schema(
+            {
+                vol.Optional(CONF_UPDATE_INTERVAL, default=scan_interval): int,
+            }
+        )
+
+        return self.async_show_form(step_id="init", data_schema=optSchem)
+
+    async def async_step_abort(self, user_input=None):
+        """Abort options flow."""
+        return self.async_create_entry(title="", data=self.config_entry.options)
 
 
 class CannotConnect(HomeAssistantError):

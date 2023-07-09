@@ -8,7 +8,8 @@
           "host": "[%key:common::config_flow::data::host%]",
           "username": "[%key:common::config_flow::data::username%]",
           "password": "[%key:common::config_flow::data::password%]",
-          "serial": "envoy serial number"
+          "serial": "envoy serial number",
+          "upd_int": "[%key:common::config_flow::data::upd_int%]"
         }
       }
     },
