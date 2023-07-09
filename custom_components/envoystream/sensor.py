@@ -1,74 +1,105 @@
 """Sensor platform for envoystream."""
+from collections.abc import Callable
+from collections.abc import Iterable
+
 from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import STATE_CLASS_MEASUREMENT
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import DEVICE_CLASS_POWER
+from homeassistant.const import POWER_WATT
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity import Entity
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DATA_SERIAL_NUMBER
+from .const import CONF_SERIAL_NUMBER
 from .const import DOMAIN
-from .const import SENSOR_TYPES
-from .entity import EnvoyStreamEntity
+from .const import NAME
+from .const import VERSION
+from .coordinator import EnvoyDataUpdateCoordinator
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_devices):
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    async_add_entities: Callable[[Iterable[Entity]], None],
+) -> None:
     """Sensor platform setup."""
 
-    serial_number: str = hass.data[DOMAIN][entry.entry_id][DATA_SERIAL_NUMBER]
+    datas = hass.data
 
-    for device in SENSOR_TYPES:
-        async_add_devices([EnvoyStreamSensor(serial_number, device)])
+    coordinator: EnvoyDataUpdateCoordinator = datas[DOMAIN][entry.entry_id]
+    serial_number: str = coordinator.entry.data[CONF_SERIAL_NUMBER]
+
+    sensors: list[Entity] = [
+        EnvoyStreamSensor(coordinator, serial_number, id) for id in coordinator.data
+    ]
+
+    async_add_entities(sensors)
 
 
 def _get_unique_id(envoy_id: str, name: str):
     return f"{envoy_id}_{name}"
 
 
-class EnvoyStreamSensor(EnvoyStreamEntity, SensorEntity):
+class EnvoyStreamSensor(CoordinatorEntity, SensorEntity):
     """envoystream Sensor class."""
 
-    def __init__(self, envoy_id: str, dev_name: str):
-        """Initialize the EnOcean sensor device."""
-        super().__init__(envoy_id)
-        self._state = None
-        self.dev_name = dev_name
+    coordinator: EnvoyDataUpdateCoordinator
+
+    def __init__(
+        self,
+        coordinator: EnvoyDataUpdateCoordinator,
+        serial_number: str,
+        value_name: str,
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator)
+        self.value_name = value_name
+        self.serial_number = serial_number
 
     @property
-    def name(self):
-        """Return the name of the sensor."""
-        return SENSOR_TYPES[self.dev_name][0]
+    def name(self) -> str:
+        """Return the name of the entity."""
+        return self.value_name.replace("_", " ").replace("-", " ").title()
 
     @property
     def unique_id(self) -> str:
         """Return the unique ID for this entity."""
-        return _get_unique_id(self.envoy_id, self.dev_name)
+        return _get_unique_id(self.serial_number, self.value_name)
 
     @property
-    def native_value(self):
-        """Return the state of the device."""
-        return self._state
+    def device_info(self):
+        """Return device information about this entity."""
+        return {
+            "identifiers": {(DOMAIN, self.serial_number)},
+            "name": NAME,
+            "model": self.serial_number,
+            "sw_version": VERSION,
+            "manufacturer": "Enphase",
+        }
 
     @property
-    def state_class(self):
-        """Return the state_class of the device."""
-        return SENSOR_TYPES[self.dev_name][3]
+    def native_value(self) -> str:
+        """Return the state of the entity."""
+        return self.coordinator.data[self.value_name]
 
     @property
     def available(self) -> bool:
         """Return True if entity is available."""
-        return super().available and self._state is not None
+        datas = self.coordinator.data
+        return super().available and self.value_name in datas
 
     @property
-    def device_class(self):
-        """Return de device class of the sensor."""
-        return SENSOR_TYPES[self.dev_name][2]
+    def device_class(self) -> str:
+        """Return the class of this entity."""
+        return DEVICE_CLASS_POWER
+
+    @property
+    def state_class(self):
+        """Return the device class."""
+        return STATE_CLASS_MEASUREMENT
 
     @property
     def native_unit_of_measurement(self) -> str:
         """Return the unit of measurement of this entity."""
-        return SENSOR_TYPES[self.dev_name][1]
-
-    def value_changed(self, frame):
-        """Update the internal state of the sensor."""
-
-        if self.dev_name in frame:
-            self._state = frame[self.dev_name]
-            self.schedule_update_ha_state()
+        return POWER_WATT

@@ -1,7 +1,6 @@
 """Config flow for Enphase Envoy integration."""
 from __future__ import annotations
 
-import logging
 from typing import Any
 
 import aiohttp
@@ -19,34 +18,12 @@ from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
 
-from .const import CONF_USE_ENLIGHTEN
-from .const import DATA_SERIAL_NUMBER
+from .const import CONF_SERIAL_NUMBER
 from .const import DOMAIN
+from .const import LOGGER
 from .envoy_reader import EnvoyReader
 
-_LOGGER = logging.getLogger(__name__)
-
 ENVOY = "Envoy"
-
-
-async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> EnvoyReader:
-    """Validate the user input allows us to connect."""
-    envoy_reader = EnvoyReader(
-        data[CONF_HOST],
-        enlighten_user=data[CONF_USERNAME],
-        enlighten_pass=data[CONF_PASSWORD],
-        enlighten_serial_num=data[DATA_SERIAL_NUMBER],
-    )
-
-    try:
-        await envoy_reader.get_meters(hass.http_session)
-    except aiohttp.ClientResponseError as err:
-        if err.status == 401:
-            raise InvalidAuth from err
-
-        raise CannotConnect from err
-
-    return envoy_reader
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -72,10 +49,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         else:
             schema[vol.Required(CONF_HOST)] = str
 
-        schema[vol.Optional(CONF_USERNAME, default=self.username or "envoy")] = str
-        schema[vol.Optional(CONF_PASSWORD, default="")] = str
-        schema[vol.Optional(DATA_SERIAL_NUMBER, default=self.unique_id)] = str
-        schema[vol.Optional(CONF_USE_ENLIGHTEN)] = bool
+        schema[vol.Required(CONF_USERNAME, default=self.username or "envoy")] = str
+        schema[vol.Required(CONF_PASSWORD, default="")] = str
+        schema[vol.Required(CONF_SERIAL_NUMBER, default=self.unique_id)] = str
         return vol.Schema(schema)
 
     @callback
@@ -94,11 +70,12 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         serial = discovery_info.properties["serialnum"]
         await self.async_set_unique_id(serial)
 
-        # 75 If system option to enable newly discoverd entries is off (by user) and uniqueid is this serial then skip updating ip
+        # 75 If system option to enable newly discoverd entries is off (by user)
+        # and uniqueid is this serial then skip updating ip
         for entry in self._async_current_entries(include_ignore=False):
             if entry.pref_disable_new_entities and entry.unique_id is not None:
                 if entry.unique_id == serial:
-                    _LOGGER.debug(
+                    LOGGER.debug(
                         "Envoy autodiscovery/ip update disabled for: %s, IP detected: %s %s",
                         serial,
                         discovery_info.host,
@@ -106,7 +83,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     )
                     return self.async_abort(reason="pref_disable_new_entities")
 
-        # autodiscovery is updating the ip address of an existing envoy with matching serial to new detected ip adress
+        # autodiscovery is updating the ip address of an existing
+        # envoy with matching serial to new detected ip adress
         self.ip_address = discovery_info.host
         self._abort_if_unique_id_configured({CONF_HOST: self.ip_address})
         for entry in self._async_current_entries(include_ignore=False):
@@ -145,7 +123,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Set the unique id by fetching it from the envoy."""
         serial = None
 
-        session = async_create_clientsession(hass)
+        session = async_create_clientsession(hass, verify_ssl=False)
         serial = await envoy_reader.get_full_serial_number(session)
         if serial:
             await self.async_set_unique_id(serial)
@@ -165,20 +143,20 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             ):
                 return self.async_abort(reason="already_configured")
             try:
-                envoy_reader = await validate_input(self.hass, user_input)
+                envoy_reader = await self.validate_input(self.hass, user_input)
             except CannotConnect:
                 errors["base"] = "cannot_connect"
             except InvalidAuth:
                 errors["base"] = "invalid_auth"
             except Exception:  # pylint: disable=broad-except
-                _LOGGER.exception("Unexpected exception")
+                LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
             else:
                 data = user_input.copy()
                 data[CONF_NAME] = self._async_envoy_name()
 
                 # Save token
-                data[CONF_TOKEN] = envoy_reader.token
+                data[CONF_TOKEN] = envoy_reader.enlighten_token
 
                 if self._reauth_entry:
                     self.hass.config_entries.async_update_entry(
@@ -199,7 +177,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if self.unique_id:
             self.context["title_placeholders"] = {
-                DATA_SERIAL_NUMBER: self.unique_id,
+                CONF_SERIAL_NUMBER: self.unique_id,
                 CONF_HOST: self.ip_address,
             }
         return self.async_show_form(
@@ -207,6 +185,30 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=self._async_generate_schema(),
             errors=errors,
         )
+
+    async def validate_input(
+        self, hass: HomeAssistant, data: dict[str, Any]
+    ) -> EnvoyReader:
+        """Validate the user input allows us to connect."""
+        envoy_reader = EnvoyReader(
+            data[CONF_HOST],
+            enlighten_user=data[CONF_USERNAME],
+            enlighten_pass=data[CONF_PASSWORD],
+            enlighten_serial_num=data[CONF_SERIAL_NUMBER],
+        )
+
+        try:
+            session = async_create_clientsession(hass, verify_ssl=False)
+            await envoy_reader.get_meters(session)
+        except aiohttp.ClientResponseError as err:
+            if err.status == 401:
+                raise InvalidAuth from err
+
+            LOGGER.debug("Validation error: %s", err)
+
+            raise CannotConnect from err
+
+        return envoy_reader
 
 
 class CannotConnect(HomeAssistantError):
