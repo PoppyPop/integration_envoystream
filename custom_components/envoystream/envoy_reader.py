@@ -156,7 +156,7 @@ class EnvoyReader:
         result["total_consumption"] = result["net-consumption"] - result["production"]
         for i in range(1, self._phase_count + 1):
             result[f"total_consumption_phase_{i}"] = (
-                result[f"net-consumption_phase_{i}"] - result[f"production_phase_{i}"]
+                result[f"production_phase_{i}"] - result[f"net-consumption_phase_{i}"]
             )
 
         return result
