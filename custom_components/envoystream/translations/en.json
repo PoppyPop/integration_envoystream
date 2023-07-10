@@ -1,21 +1,34 @@
 {
   "config": {
-    "step": {
-      "user": {
-        "title": "TeleInformation",
-        "description": "If you need help with the configuration have a look here: https://github.com/poppypop/integration_envoystream",
-        "data": {
-          "envoystream.host": "Nom d'hôte",
-          "envoystream.user": "Nom d'utilisateur",
-          "envoystream.pass": "Mot de passe"
-        }
-      }
+    "abort": {
+      "already_configured": "Device is already configured",
+      "reauth_successful": "Re-authentication was successful"
     },
     "error": {
-      "invaliddongle": "Invalid dongle path."
+      "cannot_connect": "Failed to connect",
+      "invalid_auth": "Invalid authentication",
+      "unknown": "Unexpected error"
     },
-    "abort": {
-      "single_instance_allowed": "Only a single instance is allowed."
+    "flow_title": "{serial} ({host})",
+    "step": {
+      "user": {
+        "data": {
+          "host": "Host",
+          "password": "Password",
+          "username": "Username",
+          "serial": "envoy serial number"
+        },
+        "description": "For newer models, enter username `envoy` without a password. For older models, enter username `installer` without a password. For all other models, enter a valid username and password. For firmware D7.0.0 and above check `use enlighten`"
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "upd_int": "Update delay (in secondes)"
+        }
+      }
     }
   }
 }
