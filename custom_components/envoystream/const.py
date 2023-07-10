@@ -4,7 +4,7 @@ import logging
 
 NAME = "Envoy"
 DOMAIN = "envoystream"
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 
 LOGGER = logging.getLogger(__package__)
 
