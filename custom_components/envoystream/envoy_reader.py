@@ -153,7 +153,7 @@ class EnvoyReader:
                 phase_number += 1
 
         # Add full consumption
-        result["total_consumption"] = result["net-consumption"] - result["production"]
+        result["total_consumption"] = result["production"] + result["net-consumption"]
         for i in range(1, self._phase_count + 1):
             result[f"total_consumption_phase_{i}"] = (
                 result[f"production_phase_{i}"] + result[f"net-consumption_phase_{i}"]
