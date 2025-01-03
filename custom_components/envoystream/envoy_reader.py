@@ -1,6 +1,7 @@
 """Module to read production and consumption values from an Enphase Envoy on the local network."""
+
 import typing
-import xml.etree.ElementTree as et
+import xml.etree.ElementTree as ET
 from datetime import datetime
 
 import aiohttp
@@ -118,7 +119,7 @@ class EnvoyReader:
             )
 
     async def get_meters(self, http_session: aiohttp.ClientSession) -> int:
-        """get."""
+        """Get."""
         if self._meters is None:
             await self._login(http_session)
             meters = await self._async_get(METERS_URL, http_session)
@@ -165,6 +166,6 @@ class EnvoyReader:
         """Get serial number."""
 
         infos = await self._async_get(INFO_URL, http_session, is_json=False)
-        infos_obj = et.fromstring(infos)
+        infos_obj = ET.fromstring(infos)
 
         return infos_obj.find("device").find("sn").text
