@@ -1,12 +1,13 @@
 """Sensor platform for envoystream."""
+
 from collections.abc import Callable
 from collections.abc import Iterable
 
 from homeassistant.components.sensor import SensorEntity
-from homeassistant.components.sensor import STATE_CLASS_MEASUREMENT
+from homeassistant.components.sensor import SensorStateClass
+from homeassistant.components.sensor import SensorDeviceClass
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import DEVICE_CLASS_POWER
-from homeassistant.const import POWER_WATT
+from homeassistant.const import UnitOfPower
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -100,14 +101,14 @@ class EnvoyStreamSensor(CoordinatorEntity, SensorEntity):
     @property
     def device_class(self) -> str:
         """Return the class of this entity."""
-        return DEVICE_CLASS_POWER
+        return SensorDeviceClass.POWER
 
     @property
     def state_class(self):
         """Return the device class."""
-        return STATE_CLASS_MEASUREMENT
+        return SensorStateClass.MEASUREMENT
 
     @property
     def native_unit_of_measurement(self) -> str:
         """Return the unit of measurement of this entity."""
-        return POWER_WATT
+        return UnitOfPower.WATT

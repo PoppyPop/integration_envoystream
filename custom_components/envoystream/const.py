@@ -1,4 +1,5 @@
 """Constants for envoy stream."""
+
 # Base component constants
 import logging
 
