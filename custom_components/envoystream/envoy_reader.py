@@ -142,6 +142,9 @@ class EnvoyReader:
         result: dict[str, float] = {}
 
         for reading in readings:
+            if reading["eid"] not in self._meters:
+                LOGGER.warning("Unknown meter eid: %s", reading["eid"])
+                continue
             reading_type = self._meters[reading["eid"]]
 
             result[f"{reading_type}"] = reading["instantaneousDemand"]
