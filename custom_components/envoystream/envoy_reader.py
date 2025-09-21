@@ -143,7 +143,7 @@ class EnvoyReader:
 
         for reading in readings:
             if reading["eid"] not in self._meters:
-                LOGGER.warning("Unknown meter eid: %s", reading["eid"])
+                LOGGER.debug("Unknown meter eid: %s", reading["eid"])
                 continue
             reading_type = self._meters[reading["eid"]]
 
