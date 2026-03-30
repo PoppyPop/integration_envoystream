@@ -1,4 +1,4 @@
 colorlog
-homeassistant==2026.3.3
+homeassistant==2026.3.4
 aiohttp
 pyjwt
