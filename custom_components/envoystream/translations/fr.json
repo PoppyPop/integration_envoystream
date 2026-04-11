@@ -13,17 +13,17 @@
     "step": {
       "user": {
         "data": {
-          "host": "H\u00f4te",
+          "host": "Hôte",
           "token": "Jeton"
         },
-        "description": "G\u00e9n\u00e9rez un jeton depuis https://entrez.enphaseenergy.com et saisissez-le ici."
+        "description": "Générez un jeton depuis [la page de jeton Enphase]({token_url}) et saisissez-le ici."
       }
     }
   },
   "options": {
     "step": {
       "init": {
-        "description": "Générez un jeton depuis https://entrez.enphaseenergy.com et saisissez-le ici.",
+        "description": "Générez un jeton depuis [la page de jeton Enphase]({token_url}) et saisissez-le ici.",
         "data": {
           "token": "Jeton",
           "upd_int": "Délai de mise à jour (en secondes)"

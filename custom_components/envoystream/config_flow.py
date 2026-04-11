@@ -25,6 +25,7 @@ from .const import LOGGER
 from .envoy_reader import EnvoyReader
 
 ENVOY = "Envoy"
+TOKEN_URL = "https://entrez.enphaseenergy.com"
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -134,6 +135,12 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return f"{ENVOY} {self.unique_id}"
         return ENVOY
 
+    @staticmethod
+    @callback
+    def _async_description_placeholders() -> dict[str, str]:
+        """Return description placeholders for the flow."""
+        return {"token_url": TOKEN_URL}
+
     async def _async_set_unique_id_from_envoy(
         self, hass: HomeAssistant, envoy_reader: EnvoyReader
     ) -> bool:
@@ -209,6 +216,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="user",
             data_schema=self._async_generate_schema(),
+            description_placeholders=self._async_description_placeholders(),
             errors=errors,
         )
 
@@ -257,6 +265,12 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         """Initialize options flow."""
         self._config_entry = config_entry
 
+    @staticmethod
+    @callback
+    def _async_description_placeholders() -> dict[str, str]:
+        """Return description placeholders for the flow."""
+        return {"token_url": TOKEN_URL}
+
     async def async_step_init(self, user_input: dict[str, Any] | None = None):
         """Handle options flow."""
         if user_input is not None:
@@ -286,7 +300,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             }
         )
 
-        return self.async_show_form(step_id="init", data_schema=opt_schema)
+        return self.async_show_form(
+            step_id="init",
+            data_schema=opt_schema,
+            description_placeholders=self._async_description_placeholders(),
+        )
 
     async def async_step_abort(self, user_input: dict[str, Any] | None = None):
         """Abort options flow."""

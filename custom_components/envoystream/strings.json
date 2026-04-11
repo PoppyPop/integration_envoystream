@@ -3,7 +3,7 @@
     "flow_title": "{serial} ({host})",
     "step": {
       "user": {
-        "description": "Generate a token from https://entrez.enphaseenergy.com and enter it here.",
+        "description": "Generate a token from [the Enphase token page]({token_url}) and enter it here.",
         "data": {
           "host": "[%key:common::config_flow::data::host%]",
           "token": "[%key:common::config_flow::data::token%]"
@@ -23,7 +23,7 @@
   "options": {
     "step": {
       "init": {
-        "description": "Generate a token from https://entrez.enphaseenergy.com and enter it here.",
+        "description": "Generate a token from [the Enphase token page]({token_url}) and enter it here.",
         "data": {
           "token": "[%key:common::config_flow::data::token%]",
           "upd_int": "[%key:common::config_flow::data::upd_int%]"
