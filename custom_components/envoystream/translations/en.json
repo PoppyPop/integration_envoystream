@@ -26,7 +26,7 @@
         "description": "Generate a token from https://entrez.enphaseenergy.com and enter it here.",
         "data": {
           "token": "Token",
-          "upd_int": "Update delay (in secondes)"
+          "upd_int": "Update delay (in seconds)"
         }
       }
     }

@@ -2,6 +2,7 @@
 
 from collections.abc import Callable
 from collections.abc import Iterable
+
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.components.sensor import SensorDeviceClass
 from homeassistant.components.sensor import SensorStateClass
@@ -12,11 +13,22 @@ from homeassistant.core import callback
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import Entity
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import CONF_SERIAL_NUMBER
 from .const import DOMAIN
 from .const import NAME
 from .coordinator import EnvoyDataUpdateCoordinator
+
+
+class EnvoyCoordinatorSensorEntity(  # type: ignore
+    CoordinatorEntity[EnvoyDataUpdateCoordinator], SensorEntity
+):
+    """Runtime base for coordinator-backed sensors."""
+
+    def __init__(self, coordinator: EnvoyDataUpdateCoordinator) -> None:
+        """Initialize the runtime base."""
+        super().__init__(coordinator)
 
 
 async def async_setup_entry(
@@ -65,7 +77,7 @@ def _get_device_info(serial_number: str, firmware_version: str | None) -> Device
     )
 
 
-class EnvoyStreamSensor(SensorEntity):
+class EnvoyStreamSensor(EnvoyCoordinatorSensorEntity):
     """envoystream Sensor class."""
 
     coordinator: EnvoyDataUpdateCoordinator
@@ -81,7 +93,7 @@ class EnvoyStreamSensor(SensorEntity):
         device_info: DeviceInfo,
     ) -> None:
         """Initialize the sensor."""
-        self.coordinator = coordinator
+        super().__init__(coordinator)
         self.serial_number = serial_number
         self.value_name = value_name
         self._attr_name = (
@@ -92,12 +104,6 @@ class EnvoyStreamSensor(SensorEntity):
         self._attr_unique_id = _get_unique_id(self.serial_number, self.value_name)
         self._attr_device_info = device_info
         self._update_attrs()
-
-    async def async_added_to_hass(self) -> None:
-        """Register coordinator listener when added to Home Assistant."""
-        self.async_on_remove(
-            self.coordinator.async_add_listener(self._handle_coordinator_update)
-        )
 
     def _update_attrs(self) -> None:
         """Update entity attributes from coordinator data."""
@@ -114,7 +120,7 @@ class EnvoyStreamSensor(SensorEntity):
         self.async_write_ha_state()
 
 
-class EnvoyTokenExpirationSensor(SensorEntity):
+class EnvoyTokenExpirationSensor(EnvoyCoordinatorSensorEntity):
     """Sensor exposing the token expiration date."""
 
     coordinator: EnvoyDataUpdateCoordinator
@@ -128,18 +134,12 @@ class EnvoyTokenExpirationSensor(SensorEntity):
         device_info: DeviceInfo,
     ) -> None:
         """Initialize the sensor."""
-        self.coordinator = coordinator
+        super().__init__(coordinator)
         self.serial_number = serial_number
         self._attr_name = f"{_get_name(self.serial_number)} Token Expiration"
         self._attr_unique_id = _get_unique_id(self.serial_number, "token_expiration")
         self._attr_device_info = device_info
         self._update_attrs()
-
-    async def async_added_to_hass(self) -> None:
-        """Register coordinator listener when added to Home Assistant."""
-        self.async_on_remove(
-            self.coordinator.async_add_listener(self._handle_coordinator_update)
-        )
 
     def _update_attrs(self) -> None:
         """Update entity attributes from coordinator data."""

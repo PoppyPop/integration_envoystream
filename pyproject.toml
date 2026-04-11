@@ -7,7 +7,7 @@ name = "integration-envoystream"
 dynamic = ["version"]
 description = "Home Assistant custom component for EnvoyStream"
 readme = "README.md"
-requires-python = ">=3.13.2"
+requires-python = ">=3.13"
 license = "GPL-3.0-or-later"
 authors = [
     {name = "PoppyPop", email = "skytep@gmail.com"}
@@ -66,7 +66,7 @@ ignore = [
 
 [tool.pyright]
 include = ["custom_components"]
-exclude = ["**/__pycache__", ".git", ".venv", "htmlcov", "tests", "examples"]
+exclude = ["**/__pycache__", "**/.*", "**/node_modules", ".git", ".venv", "htmlcov", "tests", "examples"]
 pythonVersion = "3.13"
 venvPath = "."
 venv = ".venv"
