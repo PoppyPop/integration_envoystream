@@ -1,7 +1,6 @@
 {
-  "name": "intregation_envoystream",
-  "image": "mcr.microsoft.com/devcontainers/python:3.12",
-  "postCreateCommand": "scripts/setup",
+  "name": "PoppyPop/integration_envoystream",
+  "image": "mcr.microsoft.com/devcontainers/python:3.14",
   "forwardPorts": [8123],
   "portsAttributes": {
     "8123": {
@@ -12,29 +11,43 @@
   "customizations": {
     "vscode": {
       "extensions": [
-        "ms-python.python",
+        "charliermarsh.ruff",
         "github.vscode-pull-request-github",
+        "ms-python.python",
+        "ms-python.vscode-pylance",
         "ryanluker.vscode-coverage-gutters",
-        "ms-python.vscode-pylance"
+        "redhat.vscode-yaml",
+        "esbenp.prettier-vscode",
+        "GitHub.vscode-pull-request-github",
+        "GitHub.copilot"
       ],
       "settings": {
-        "files.eol": "\n",
-        "editor.tabSize": 4,
-        "python.pythonPath": "/usr/bin/python3",
-        "python.analysis.autoSearchPaths": false,
-        "python.linting.pylintEnabled": true,
-        "python.linting.enabled": true,
-        "python.formatting.provider": "black",
-        "python.formatting.blackPath": "/usr/local/py-utils/bin/black",
+        "python.experiments.optOutFrom": ["pythonTestAdapter"],
+        "python.defaultInterpreterPath": ".venv/bin/python",
+        "python.pythonPath": ".venv/bin/python",
+        "python.terminal.activateEnvInCurrentTerminal": true,
+        "python.testing.pytestArgs": ["--no-cov"],
+        "pylint.importStrategy": "fromEnvironment",
+        "python.analysis.typeCheckingMode": "strict",
         "editor.formatOnPaste": false,
         "editor.formatOnSave": true,
         "editor.formatOnType": true,
-        "files.trimTrailingWhitespace": true
+        "files.trimTrailingWhitespace": true,
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff"
+        },
+        "[json][jsonc][yaml]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        }
       }
     }
   },
+  "postCreateCommand": "pip install uv && uv sync --all-extras",
   "remoteUser": "vscode",
   "features": {
-    "ghcr.io/devcontainers/features/rust:1": {}
+    "ghcr.io/devcontainers/features/rust:1": {},
+    "ghcr.io/devcontainers-extra/features/apt-packages:1": {
+      "packages": "ffmpeg,libturbojpeg0,libpcap-dev"
+    }
   }
 }
