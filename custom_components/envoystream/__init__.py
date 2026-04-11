@@ -13,6 +13,11 @@ from .coordinator import EnvoyDataUpdateCoordinator
 PLATFORMS = ["sensor"]
 
 
+async def _async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Reload config entry when its data or options change."""
+    await hass.config_entries.async_reload(entry.entry_id)
+
+
 # pylint: disable=unused-argument
 async def async_setup(hass: HomeAssistant, config: ConfigEntry):
     """Set up this integration using YAML is not supported."""
@@ -21,6 +26,8 @@ async def async_setup(hass: HomeAssistant, config: ConfigEntry):
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up IRegul from a config entry."""
+
+    entry.async_on_unload(entry.add_update_listener(_async_reload_entry))
 
     coordinator = EnvoyDataUpdateCoordinator(hass, entry=entry)
 

@@ -7,17 +7,15 @@ from typing import Any
 import aiohttp
 import voluptuous as vol
 from homeassistant import config_entries
-from homeassistant.components import zeroconf
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST
 from homeassistant.const import CONF_NAME
-from homeassistant.const import CONF_PASSWORD
 from homeassistant.const import CONF_TOKEN
-from homeassistant.const import CONF_USERNAME
 from homeassistant.core import callback
 from homeassistant.core import HomeAssistant
-from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
+from jwt import InvalidTokenError
 
 from .const import CONF_SERIAL_NUMBER
 from .const import CONF_UPDATE_INTERVAL
@@ -36,14 +34,13 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     def __init__(self):
         """Initialize an envoy flow."""
-        self.ip_address = None
-        self.username = None
-        self._reauth_entry = None
+        self.ip_address: str | None = None
+        self._reauth_entry: ConfigEntry | None = None
 
     @callback
-    def _async_generate_schema(self):
+    def _async_generate_schema(self) -> vol.Schema:
         """Generate schema."""
-        schema = {}
+        schema: dict[vol.Marker, object] = {}
 
         if self.ip_address:
             schema[vol.Required(CONF_HOST, default=self.ip_address)] = vol.In(
@@ -52,13 +49,19 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         else:
             schema[vol.Required(CONF_HOST)] = str
 
-        schema[vol.Required(CONF_USERNAME, default=self.username or "envoy")] = str
-        schema[vol.Required(CONF_PASSWORD, default="")] = str
-        schema[vol.Required(CONF_SERIAL_NUMBER, default=self.unique_id)] = str
+        default_token = None
+        if self._reauth_entry is not None:
+            default_token = self._reauth_entry.data.get(CONF_TOKEN)
+
+        if default_token:
+            schema[vol.Required(CONF_TOKEN, default=default_token)] = str
+        else:
+            schema[vol.Required(CONF_TOKEN)] = str
+
         return vol.Schema(schema)
 
     @callback
-    def _async_current_hosts(self):
+    def _async_current_hosts(self) -> set[str]:
         """Return a set of hosts."""
         return {
             entry.data[CONF_HOST]
@@ -66,11 +69,13 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             if CONF_HOST in entry.data
         }
 
-    async def async_step_zeroconf(
-        self, discovery_info: zeroconf.ZeroconfServiceInfo
-    ) -> FlowResult:
+    async def async_step_zeroconf(self, discovery_info: Any):
         """Handle a flow initialized by zeroconf discovery."""
         serial = discovery_info.properties["serialnum"]
+        if isinstance(serial, bytes):
+            serial = serial.decode()
+
+        host = str(discovery_info.host)
         await self.async_set_unique_id(serial)
 
         # 75 If system option to enable newly discoverd entries is off (by user)
@@ -81,14 +86,14 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     LOGGER.debug(
                         "Envoy autodiscovery/ip update disabled for: %s, IP detected: %s %s",
                         serial,
-                        discovery_info.host,
+                        host,
                         entry.unique_id,
                     )
                     return self.async_abort(reason="pref_disable_new_entities")
 
         # autodiscovery is updating the ip address of an existing
         # envoy with matching serial to new detected ip adress
-        self.ip_address = discovery_info.host
+        self.ip_address = host
         self._abort_if_unique_id_configured({CONF_HOST: self.ip_address})
         for entry in self._async_current_entries(include_ignore=False):
             if (
@@ -108,11 +113,19 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return await self.async_step_user()
 
     # pylint: disable=unused-argument
-    async def async_step_reauth(self, user_input):
+    async def async_step_reauth(self, user_input: dict[str, Any] | None = None):
         """Handle configuration by re-auth."""
-        self._reauth_entry = self.hass.config_entries.async_get_entry(
-            self.context["entry_id"]
-        )
+        entry_id = self.context.get("entry_id")
+        if entry_id is None:
+            return self.async_abort(reason="unknown")
+
+        self._reauth_entry = self.hass.config_entries.async_get_entry(entry_id)
+        if self._reauth_entry is None:
+            return self.async_abort(reason="unknown")
+
+        self.ip_address = self._reauth_entry.data[CONF_HOST]
+        if self._reauth_entry.unique_id:
+            await self.async_set_unique_id(self._reauth_entry.unique_id)
         return await self.async_step_user()
 
     def _async_envoy_name(self) -> str:
@@ -125,20 +138,23 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self, hass: HomeAssistant, envoy_reader: EnvoyReader
     ) -> bool:
         """Set the unique id by fetching it from the envoy."""
-        serial = None
+        serial = envoy_reader.enlighten_serial_num
+        if serial is None:
+            session = async_create_clientsession(hass, verify_ssl=False)
+            serial, firmware_version = await envoy_reader.get_full_serial_number(
+                session
+            )
+            envoy_reader.firmware_version = firmware_version
 
-        session = async_create_clientsession(hass, verify_ssl=False)
-        serial = await envoy_reader.get_full_serial_number(session)
         if serial:
+            envoy_reader.enlighten_serial_num = serial
             await self.async_set_unique_id(serial)
             return True
         return False
 
-    async def async_step_user(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    async def async_step_user(self, user_input: dict[str, Any] | None = None):
         """Handle the initial step."""
-        errors = {}
+        errors: dict[str, str] = {}
 
         if user_input is not None:
             if (
@@ -156,11 +172,22 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
             else:
-                data = user_input.copy()
-                data[CONF_NAME] = self._async_envoy_name()
+                if (
+                    not self.unique_id
+                    and not await self._async_set_unique_id_from_envoy(
+                        self.hass, envoy_reader
+                    )
+                ):
+                    errors["base"] = "cannot_connect"
+                    return self.async_show_form(
+                        step_id="user",
+                        data_schema=self._async_generate_schema(),
+                        errors=errors,
+                    )
 
-                # Save token
-                data[CONF_TOKEN] = envoy_reader.enlighten_token
+                data = user_input.copy()
+                data[CONF_SERIAL_NUMBER] = envoy_reader.enlighten_serial_num
+                data[CONF_NAME] = self._async_envoy_name()
 
                 if self._reauth_entry:
                     self.hass.config_entries.async_update_entry(
@@ -168,11 +195,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         data=data,
                     )
                     return self.async_abort(reason="reauth_successful")
-
-                if not self.unique_id and await self._async_set_unique_id_from_envoy(
-                    self.hass, envoy_reader
-                ):
-                    data[CONF_NAME] = self._async_envoy_name()
 
                 if self.unique_id:
                     self._abort_if_unique_id_configured({CONF_HOST: data[CONF_HOST]})
@@ -182,7 +204,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if self.unique_id:
             self.context["title_placeholders"] = {
                 CONF_SERIAL_NUMBER: self.unique_id,
-                CONF_HOST: self.ip_address,
+                CONF_HOST: self.ip_address or "",
             }
         return self.async_show_form(
             step_id="user",
@@ -196,14 +218,18 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Validate the user input allows us to connect."""
         envoy_reader = EnvoyReader(
             data[CONF_HOST],
-            enlighten_user=data[CONF_USERNAME],
-            enlighten_pass=data[CONF_PASSWORD],
-            enlighten_serial_num=data[CONF_SERIAL_NUMBER],
+            enlighten_token=data[CONF_TOKEN],
         )
 
         try:
             session = async_create_clientsession(hass, verify_ssl=False)
             await envoy_reader.get_meters(session)
+            (
+                envoy_reader.enlighten_serial_num,
+                envoy_reader.firmware_version,
+            ) = await envoy_reader.get_full_serial_number(session)
+        except InvalidTokenError as err:
+            raise InvalidAuth from err
         except aiohttp.ClientResponseError as err:
             if err.status == 401:
                 raise InvalidAuth from err
@@ -211,12 +237,15 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             LOGGER.debug("Validation error: %s", err)
 
             raise CannotConnect from err
+        except ValueError as err:
+            LOGGER.debug("Validation error: %s", err)
+            raise CannotConnect from err
 
         return envoy_reader
 
     @staticmethod
     @callback
-    def async_get_options_flow(config_entry):
+    def async_get_options_flow(config_entry: ConfigEntry):
         """Get the options flow for this handler."""
         return OptionsFlowHandler(config_entry)
 
@@ -226,28 +255,42 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
     def __init__(self, config_entry: config_entries.ConfigEntry):
         """Initialize options flow."""
-        self.config_entry = config_entry
+        self._config_entry = config_entry
 
-    async def async_step_init(self, user_input=None):
+    async def async_step_init(self, user_input: dict[str, Any] | None = None):
         """Handle options flow."""
         if user_input is not None:
-            return self.async_create_entry(title="", data=user_input)
+            self.hass.config_entries.async_update_entry(
+                self._config_entry,
+                data={
+                    **self._config_entry.data,
+                    CONF_TOKEN: user_input[CONF_TOKEN],
+                },
+            )
+            return self.async_create_entry(
+                title="",
+                data={CONF_UPDATE_INTERVAL: user_input[CONF_UPDATE_INTERVAL]},
+            )
 
-        scan_interval = self.config_entry.options.get(
+        scan_interval = self._config_entry.options.get(
             CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL
         )
 
-        optSchem = vol.Schema(
+        opt_schema = vol.Schema(
             {
+                vol.Required(
+                    CONF_TOKEN,
+                    default=self._config_entry.data.get(CONF_TOKEN, ""),
+                ): str,
                 vol.Optional(CONF_UPDATE_INTERVAL, default=scan_interval): int,
             }
         )
 
-        return self.async_show_form(step_id="init", data_schema=optSchem)
+        return self.async_show_form(step_id="init", data_schema=opt_schema)
 
-    async def async_step_abort(self, user_input=None):
+    async def async_step_abort(self, user_input: dict[str, Any] | None = None):
         """Abort options flow."""
-        return self.async_create_entry(title="", data=self.config_entry.options)
+        return self.async_create_entry(title="", data=self._config_entry.options)
 
 
 class CannotConnect(HomeAssistantError):

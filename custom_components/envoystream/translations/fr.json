@@ -14,18 +14,18 @@
       "user": {
         "data": {
           "host": "H\u00f4te",
-          "password": "Mot de passe",
-          "username": "Nom d'utilisateur",
-          "serial": "Num\u00c9ro de s\u00c9rie envoy"
+          "token": "Jeton"
         },
-        "description": "Pour les mod\u00e8les plus r\u00e9cents, saisissez le nom d'utilisateur \u00ab\u00a0envoy\u00a0\u00bb sans mot de passe. Pour les mod\u00e8les plus anciens, entrez le nom d'utilisateur \u00ab\u00a0installer\u00a0\u00bb sans mot de passe. Pour tous les autres mod\u00e8les, entrez un nom d'utilisateur et un mot de passe valides."
+        "description": "G\u00e9n\u00e9rez un jeton depuis https://entrez.enphaseenergy.com et saisissez-le ici."
       }
     }
   },
   "options": {
     "step": {
       "init": {
+        "description": "Générez un jeton depuis https://entrez.enphaseenergy.com et saisissez-le ici.",
         "data": {
+          "token": "Jeton",
           "upd_int": "Délai de mise à jour (en secondes)"
         }
       }
