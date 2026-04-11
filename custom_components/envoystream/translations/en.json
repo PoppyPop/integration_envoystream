@@ -14,19 +14,19 @@
       "user": {
         "data": {
           "host": "Host",
-          "password": "Password",
-          "username": "Username",
-          "serial": "envoy serial number"
+          "token": "Token"
         },
-        "description": "For newer models, enter username `envoy` without a password. For older models, enter username `installer` without a password. For all other models, enter a valid username and password. For firmware D7.0.0 and above check `use enlighten`"
+        "description": "Generate a token from [the Enphase token page]({token_url}) and enter it here."
       }
     }
   },
   "options": {
     "step": {
       "init": {
+        "description": "Generate a token from [the Enphase token page]({token_url}) and enter it here.",
         "data": {
-          "upd_int": "Update delay (in secondes)"
+          "token": "Token",
+          "upd_int": "Update delay (in seconds)"
         }
       }
     }

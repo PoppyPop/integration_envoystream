@@ -4,9 +4,7 @@ from datetime import timedelta
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST
-from homeassistant.const import CONF_PASSWORD
 from homeassistant.const import CONF_TOKEN
-from homeassistant.const import CONF_USERNAME
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
@@ -31,8 +29,6 @@ class EnvoyDataUpdateCoordinator(DataUpdateCoordinator):
 
         self.envoy_reader = EnvoyReader(
             entry.data[CONF_HOST],
-            enlighten_user=entry.data[CONF_USERNAME],
-            enlighten_pass=entry.data[CONF_PASSWORD],
             enlighten_serial_num=entry.data[CONF_SERIAL_NUMBER],
             enlighten_token=entry.data[CONF_TOKEN],
         )
@@ -46,7 +42,7 @@ class EnvoyDataUpdateCoordinator(DataUpdateCoordinator):
             update_interval=timedelta(seconds=scan_interval),
         )
 
-    async def _async_update_data(self) -> dict:
+    async def _async_update_data(self) -> dict[str, float]:
         """Fetch data from IRegul."""
 
         return await self.envoy_reader.get_datas(self.session)

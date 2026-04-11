@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+env:
+  DEFAULT_PYTHON: 3.14
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          cache-dependency-glob: |
+            **/pyproject.toml
+          python-version: ${{ env.DEFAULT_PYTHON }}
+      - name: Run pre-commit
+        run: uv run pre-commit run --all-files
+
+  hacs:
+    runs-on: "ubuntu-latest"
+    name: HACS
+    steps:
+      - name: Check out the repository
+        uses: "actions/checkout@v3"
+
+      - name: HACS validation
+        uses: "hacs/action@22.5.0"
+        with:
+          category: "integration"
+          ignore: brands
+
+  hassfest:
+    runs-on: "ubuntu-latest"
+    name: Hassfest
+    steps:
+      - name: Check out the repository
+        uses: "actions/checkout@v6"
+
+      - name: Hassfest validation
+        uses: "home-assistant/actions/hassfest@master"
+
+  # test:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v6
+
+  #     - name: Install uv
+  #       uses: astral-sh/setup-uv@v7
+  #       with:
+  #         cache-dependency-glob: |
+  #           **/pyproject.toml
+  #         python-version: ${{ env.DEFAULT_PYTHON }}
+  #     - name: Run tests
+  #       run: uv run pytest -v --cov=custom_components.integration_envoystream

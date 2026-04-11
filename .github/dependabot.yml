@@ -3,12 +3,12 @@ updates:
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
-      interval: weekly
-  - package-ecosystem: pip
-    directory: "/.github/workflows"
-    schedule:
-      interval: weekly
-  - package-ecosystem: pip
+      interval: daily
+  - package-ecosystem: "devcontainers"
     directory: "/"
     schedule:
       interval: weekly
+  - package-ecosystem: uv
+    directory: "/"
+    schedule:
+      interval: daily

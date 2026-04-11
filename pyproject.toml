@@ -1,0 +1,90 @@
+[build-system]
+requires = ["setuptools>=77.0", "setuptools_scm[toml]>=8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "integration-envoystream"
+dynamic = ["version"]
+description = "Home Assistant custom component for EnvoyStream"
+readme = "README.md"
+requires-python = ">=3.14.2"
+license = "GPL-3.0-or-later"
+authors = [
+    {name = "PoppyPop", email = "skytep@gmail.com"}
+]
+keywords = ["envoystream", "async", "api", "home-automation"]
+dependencies = [
+  "aiohttp>=3.13.3",
+  "colorlog>=6.10.1",
+  "homeassistant>=2026.4.1",
+  "pyjwt>=2.10.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/PoppyPop/integration_envoystream"
+Repository = "https://github.com/PoppyPop/integration_envoystream"
+Issues = "https://github.com/PoppyPop/integration_envoystream/issues"
+"Bug Tracker" = "https://github.com/PoppyPop/integration_envoystream/issues"
+
+[tool.setuptools]
+package-dir = {"" = "custom_components"}
+
+[tool.setuptools_scm]
+
+[tool.setuptools.packages.find]
+where = ["custom_components"]
+include = ["integration_envoystream"]
+namespaces = false
+
+# Ruff configuration
+[tool.ruff]
+line-length = 100
+src = ["custom_components", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+    "ARG", # flake8-unused-arguments
+    "SIM", # flake8-simplify
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+    "B008",  # do not perform function calls in argument defaults
+    "ARG001", # allow unused arguments
+    "ARG002", # allow unused arguments
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]  # imported but unused
+"tests/**/*.py" = ["ARG", "S101"]  # pytest uses assert
+
+[tool.pyright]
+include = ["custom_components"]
+exclude = ["**/__pycache__", "**/.*", "**/node_modules", ".git", ".venv", "htmlcov", "tests", "examples"]
+pythonVersion = "3.13"
+venvPath = "."
+venv = ".venv"
+typeCheckingMode = "strict"
+reportMissingTypeStubs = "warning"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+
+[dependency-groups]
+dev = [
+    # Testing
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.1.0",
+    "pytest-xdist>=3.3.0",
+    "pytest-homeassistant-custom-component>=0.13.0",
+    "pyright>=1.1.389",
+    "pre-commit>=3.5.0",
+    "ruff>=0.1.0",
+]
