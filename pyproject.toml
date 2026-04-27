@@ -16,7 +16,7 @@ keywords = ["envoystream", "async", "api", "home-automation"]
 dependencies = [
   "aiohttp>=3.13.3",
   "colorlog>=6.10.1",
-  "homeassistant>=2026.4.2",
+  "homeassistant>=2026.4.4",
   "pyjwt>=2.10.1",
 ]
 
