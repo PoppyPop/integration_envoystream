@@ -1206,7 +1206,7 @@ dev = [
 requires-dist = [
     { name = "aiohttp", specifier = ">=3.13.3" },
     { name = "colorlog", specifier = ">=6.10.1" },
-    { name = "homeassistant", specifier = ">=2026.5.2" },
+    { name = "homeassistant", specifier = ">=2026.5.3" },
     { name = "pyjwt", specifier = ">=2.12.1" },
 ]
 
