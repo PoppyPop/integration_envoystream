@@ -86,5 +86,5 @@ dev = [
     "pytest-homeassistant-custom-component>=0.13.340",
     "pyright>=1.1.410",
     "pre-commit>=4.6.0",
-    "ruff>=0.15.18",
+    "ruff>=0.15.19",
 ]
