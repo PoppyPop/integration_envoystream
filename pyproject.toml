@@ -84,7 +84,7 @@ dev = [
     "pytest-cov>=7.1.0",
     "pytest-xdist>=3.3.0",
     "pytest-homeassistant-custom-component>=0.13.340",
-    "pyright>=1.1.410",
+    "pyright>=1.1.411",
     "pre-commit>=4.6.0",
     "ruff>=0.15.20",
 ]
