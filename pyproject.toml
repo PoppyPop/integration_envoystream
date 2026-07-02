@@ -80,7 +80,7 @@ asyncio_mode = "auto"
 dev = [
     # Testing
     "pytest>=9.0.3",
-    "pytest-asyncio>=0.21.0",
+    "pytest-asyncio>=1.4.0",
     "pytest-cov>=7.1.0",
     "pytest-xdist>=3.3.0",
     "pytest-homeassistant-custom-component>=0.13.340",
